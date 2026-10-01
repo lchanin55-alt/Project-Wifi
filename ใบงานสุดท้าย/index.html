@@ -1,0 +1,566 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ปัญหา Wi-Fi ช้าเมื่อมีผู้ใช้เชื่อมต่อจำนวนมากในมหาวิทยาลัย</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #f3f6f8;
+    --ink: #14232e;
+    --muted: #55687a;
+    --line: #d3dde5;
+    --card: #ffffff;
+    --good: #1f9d6b;
+    --warn: #e0a100;
+    --bad: #d6453d;
+    --accent: #0b6f8f;
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: "IBM Plex Sans Thai", "Noto Sans Thai", Tahoma, sans-serif;
+    line-height: 1.75;
+    font-size: 17px;
+  }
+  .wrap { max-width: 880px; margin: 0 auto; padding: 0 20px; }
+  header { background: var(--ink); color: #fff; padding: 56px 0 40px; }
+  header h1 { font-size: clamp(1.7rem, 4.5vw, 2.6rem); line-height: 1.3; margin: 0 0 14px; font-weight: 700; }
+  header p { margin: 0; max-width: 62ch; color: #b9c9d6; }
+  .bars { display: flex; align-items: flex-end; gap: 6px; height: 54px; margin-bottom: 22px; }
+  .bars span { width: 12px; border-radius: 3px; background: var(--good); }
+  .bars span:nth-child(1) { height: 25%; }
+  .bars span:nth-child(2) { height: 45%; }
+  .bars span:nth-child(3) { height: 65%; background: var(--warn); }
+  .bars span:nth-child(4) { height: 85%; background: #4a5b69; }
+  .bars span:nth-child(5) { height: 100%; background: #4a5b69; }
+  nav { background: #fff; border-bottom: 1px solid var(--line); position: sticky; top: 0; z-index: 5; }
+  nav .wrap { display: flex; gap: 22px; overflow-x: auto; padding-top: 12px; padding-bottom: 12px; }
+  nav a { color: var(--muted); text-decoration: none; white-space: nowrap; font-size: 15px; }
+  nav a:hover, nav a:focus-visible { color: var(--accent); outline: none; text-decoration: underline; }
+  section { padding: 44px 0 6px; }
+  h2 { font-size: 1.5rem; margin: 0 0 12px; line-height: 1.4; }
+  h3 { font-size: 1.05rem; margin: 0 0 4px; }
+  p { margin: 0 0 14px; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 14px; margin-top: 16px; }
+  .card { background: var(--card); border: 1px solid var(--line); border-left: 4px solid var(--accent); border-radius: 6px; padding: 16px 18px; }
+  .card p { margin: 0; color: var(--muted); font-size: 15.5px; line-height: 1.65; }
+  .card.fix { border-left-color: var(--good); }
+
+  .sim { background: var(--card); border: 1px solid var(--line); border-radius: 8px; padding: 22px; margin-top: 18px; }
+  .sim label { display: block; font-weight: 500; margin-bottom: 8px; }
+  .sim input[type=range] { width: 100%; accent-color: var(--accent); }
+  .readout { display: flex; flex-wrap: wrap; gap: 28px; margin: 18px 0 12px; }
+  .readout div b { display: block; font-size: 2rem; line-height: 1.2; }
+  .readout small { color: var(--muted); }
+  .meter { height: 14px; background: #e6edf2; border-radius: 7px; overflow: hidden; }
+  .meter i { display: block; height: 100%; width: 100%; background: var(--good); transition: width .25s, background .25s; }
+  .status { margin: 12px 0 0; font-weight: 500; }
+  .note { font-size: 14px; color: var(--muted); margin-top: 10px; }
+
+  table { width: 100%; border-collapse: collapse; background: var(--card); border: 1px solid var(--line); border-radius: 8px; overflow: hidden; margin-top: 14px; font-size: 15.5px; }
+  th, td { text-align: left; padding: 11px 14px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th { background: #e9f0f4; font-weight: 500; }
+  tr:last-child td { border-bottom: 0; }
+  .tablewrap { overflow-x: auto; }
+  footer { margin-top: 56px; padding: 26px 0; border-top: 1px solid var(--line); color: var(--muted); font-size: 14.5px; }
+  .report-btn {
+    margin-top: 22px; display: inline-flex; align-items: center; gap: 8px;
+    background: var(--bad); color: #fff; border: 0; border-radius: 8px;
+    padding: 13px 22px; font: inherit; font-weight: 700; cursor: pointer;
+  }
+  .report-btn:hover { background: #bf3a33; }
+  .report-btn:focus-visible, .btn:focus-visible, dialog :is(select, textarea, input):focus-visible { outline: 3px solid #7cc4dc; outline-offset: 2px; }
+  dialog { border: 0; border-radius: 12px; padding: 0; width: min(520px, calc(100% - 24px)); color: var(--ink); background: var(--card); }
+  dialog::backdrop { background: rgba(20, 35, 46, .6); }
+  .dlg { padding: 24px; }
+  .dlg h2 { margin-bottom: 4px; }
+  .dlg .sub { color: var(--muted); font-size: 15px; margin-bottom: 16px; }
+  .field { margin-bottom: 14px; }
+  .field label { display: block; font-weight: 500; margin-bottom: 4px; font-size: 15.5px; }
+  .field select, .field textarea, .field input[type=file] {
+    width: 100%; font: inherit; padding: 10px 12px; border: 1px solid var(--line);
+    border-radius: 8px; background: #fff; color: var(--ink);
+  }
+  .field textarea { min-height: 84px; resize: vertical; }
+  .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .err { color: var(--bad); font-size: 14px; min-height: 20px; margin: 0 0 8px; }
+  .actions { display: flex; gap: 10px; justify-content: flex-end; }
+  .btn { font: inherit; font-weight: 500; border-radius: 8px; padding: 10px 18px; cursor: pointer; border: 1px solid var(--line); background: #fff; color: var(--ink); }
+  .btn.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .done { text-align: center; padding: 8px 0 4px; }
+  .done .ticket { display: inline-block; margin: 8px 0; padding: 6px 14px; background: #e9f0f4; border-radius: 6px; font-weight: 700; letter-spacing: .5px; }
+  .pill { display: inline-block; padding: 2px 10px; border-radius: 999px; background: #fff4d1; color: #7a5b00; font-size: 14px; }
+  @media (max-width: 480px) { .row2 { grid-template-columns: 1fr; } }
+
+  .fr { display:inline-block; font-size:13px; font-weight:500; padding:1px 9px; border-radius:999px; background:#e0eef4; color:var(--accent); vertical-align:middle; margin-left:6px; }
+  nav .wrap { align-items:center; }
+  .authbox { margin-left:auto; display:flex; gap:10px; align-items:center; white-space:nowrap; }
+  .chip { font-size:14px; background:#e9f0f4; padding:4px 12px; border-radius:999px; }
+  .chip a { color:var(--accent); font-weight:700; }
+  .btn.sm { padding:5px 12px; font-size:14px; }
+  .legend { display:flex; flex-wrap:wrap; gap:16px; font-size:14.5px; color:var(--muted); margin:6px 0 12px; }
+  .dot { display:inline-block; width:11px; height:11px; border-radius:50%; margin-right:6px; vertical-align:-1px; }
+  .dot.good{background:var(--good)} .dot.warn{background:var(--warn)} .dot.bad{background:var(--bad)}
+  .map { display:grid; grid-template-columns:repeat(auto-fit,minmax(250px,1fr)); gap:14px; }
+  .bldg { background:var(--card); border:1px solid var(--line); border-radius:8px; padding:14px 16px; }
+  .bldg h3 { display:flex; justify-content:space-between; align-items:center; gap:8px; margin-bottom:10px; }
+  .bldg .st { font-size:13.5px; font-weight:500; }
+  .floors { display:flex; flex-wrap:wrap; gap:6px; }
+  .fl { font-size:13.5px; padding:3px 10px; border-radius:6px; border:1px solid; }
+  .lv-good{background:#dff3ea;color:#116b49;border-color:#9fd7bd}
+  .lv-warn{background:#fff4d1;color:#7a5b00;border-color:#ecd27a}
+  .lv-bad{background:#fde3e1;color:#9c2a23;border-color:#f0a8a3}
+  .list { display:grid; gap:10px; margin-top:12px; }
+  .item { background:var(--card); border:1px solid var(--line); border-radius:8px; padding:12px 16px; display:flex; flex-wrap:wrap; justify-content:space-between; gap:8px; }
+  .item small { color:var(--muted); display:block; }
+  .item.unread { border-left:4px solid var(--accent); }
+  .st-Pending{background:#fff4d1;color:#7a5b00} .st-InProgress{background:#dcecf9;color:#0b4f8a} .st-Resolved{background:#dff3ea;color:#116b49}
+  .empty { background:#fff; border:1px dashed var(--line); border-radius:8px; padding:18px; color:var(--muted); }
+  .toast { position:fixed; left:50%; bottom:22px; transform:translateX(-50%); background:var(--ink); color:#fff; padding:11px 20px; border-radius:8px; z-index:20; max-width:calc(100% - 32px); font-size:15px; }
+  .toast[hidden]{display:none}
+  .toolbar { display:flex; gap:10px; flex-wrap:wrap; align-items:center; margin-top:12px; }
+  .toolbar select { font:inherit; padding:7px 10px; border:1px solid var(--line); border-radius:8px; background:#fff; }
+  @media (prefers-reduced-motion: reduce) { .meter i { transition: none; } html { scroll-behavior: auto; } }
+  .repair-banner { background:#dcecf9; border-bottom:1px solid #a9cbe8; color:#0b4f8a; }
+  .repair-banner[hidden] { display:none; }
+  .repair-banner .wrap { display:flex; gap:12px; align-items:center; justify-content:space-between; flex-wrap:wrap; padding-top:10px; padding-bottom:10px; font-weight:500; }
+  .pulse { display:inline-block; width:10px; height:10px; border-radius:50%; background:#0b6fd6; margin-right:8px; animation:pulse 1.4s infinite; }
+  @keyframes pulse { 50% { opacity:.25; } }
+  .badge { background:var(--bad); color:#fff; border-radius:999px; font-size:12px; padding:0 7px; margin-left:5px; }
+  .badge[hidden] { display:none; }
+  @media (prefers-reduced-motion: reduce) { .pulse { animation:none; } }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="wrap">
+    <div class="bars" aria-hidden="true"><span></span><span></span><span></span><span></span><span></span></div>
+    <h1>ปัญหา Wi-Fi ช้าเมื่อมีผู้ใช้เชื่อมต่อจำนวนมากในมหาวิทยาลัย</h1>
+    <p>ช่วงคาบเรียน สอบออนไลน์ หรือลงทะเบียนเรียน นักศึกษาและบุคลากรหลายพันคนใช้เครือข่ายพร้อมกัน ทำให้สัญญาณเต็มแต่เน็ตช้า หน้านี้สรุปว่าเกิดจากอะไร ส่งผลอย่างไร และแก้ได้อย่างไร</p>
+    <button type="button" class="report-btn" id="openReport">แจ้งเน็ตช้า</button>
+  </div>
+</header>
+
+<nav aria-label="เมนูหน้านี้">
+  <div class="wrap">
+    <a href="#problem">ปัญหา</a>
+    <a href="#causes">สาเหตุ</a>
+    <a href="#simulator">ลองจำลอง</a>
+    <a href="#solutions">แนวทางแก้ไข</a>
+    <a href="#map">แผนที่สถานะ</a>
+    <a href="#mine">คำร้อง/แจ้งเตือน</a>
+    <a href="#it">สำหรับ IT</a>
+    <a href="#" onclick="document.getElementById('openReport').click(); return false;">แจ้งเน็ตช้า</a>
+    <a href="#" id="repairLink">สถานะกำลังซ่อม<span class="badge" id="repairBadge" hidden></span></a>
+    <span class="authbox" id="authBox"></span>
+  </div>
+</nav>
+
+<div class="repair-banner" id="repairBanner" role="status" hidden>
+  <div class="wrap"><span><i class="pulse"></i><span id="repairText"></span></span><button type="button" class="btn sm" id="repairOpen">ดูรายละเอียด</button></div>
+</div>
+
+<main class="wrap">
+
+  <section id="problem">
+    <h2>ปัญหาที่เกิดขึ้น</h2>
+    <p>สัญญาณ Wi-Fi แสดงเต็มแท่ง แต่เปิดเว็บไม่ขึ้น วิดีโอกระตุก ส่งงานในระบบ e-learning ไม่ได้ หรือหลุดจากการสอบออนไลน์ อาการเหล่านี้มักเกิดในห้องเรียนใหญ่ โรงอาหาร ห้องสมุด และหอพักช่วงเย็น ซึ่งมีคนเชื่อมต่อหนาแน่น</p>
+    <p>สัญญาณแรงไม่ได้แปลว่าเน็ตเร็ว เพราะความเร็วขึ้นกับจำนวนคนที่ใช้ access point (AP) ตัวเดียวกันในเวลาเดียวกัน</p>
+  </section>
+
+  <section id="causes">
+    <h2>สาเหตุหลัก</h2>
+    <div class="grid">
+      <div class="card"><h3>AP รับภาระเกินกำลัง</h3><p>AP หนึ่งตัวใช้ช่องสัญญาณร่วมกันทุกเครื่อง ผลัดกันส่งทีละเครื่อง ยิ่งมีเครื่องมาก เวลาที่แต่ละเครื่องได้ส่งยิ่งน้อย</p></div>
+      <div class="card"><h3>คลื่นรบกวนกัน</h3><p>คลื่น 2.4 GHz มีช่องที่ไม่ซ้อนกันน้อย AP ใกล้กันใช้ช่องเดียวกันจึงแย่งช่วงเวลากันเอง</p></div>
+      <div class="card"><h3>อินเทอร์เน็ตขาออกไม่พอ</h3><p>ต่อให้ Wi-Fi ดี หากท่อเชื่อมสู่อินเทอร์เน็ตของมหาวิทยาลัยเต็ม ทุกคนก็ช้าพร้อมกัน</p></div>
+      <div class="card"><h3>เซิร์ฟเวอร์ล็อกอินและ DHCP</h3><p>คนล็อกอิน SSO พร้อมกันช่วงต้นคาบทำให้ระบบยืนยันตัวตนช้า และที่อยู่ IP ในกลุ่มอาจหมด</p></div>
+      <div class="card"><h3>อุปกรณ์ต่อคนมากขึ้น</h3><p>หนึ่งคนมักเชื่อมต่อมือถือ โน้ตบุ๊ก และแท็บเล็ตพร้อมกัน จำนวนอุปกรณ์จึงมากกว่าจำนวนคน</p></div>
+      <div class="card"><h3>ไม่มีข้อมูลจากผู้ใช้</h3><p>เจ้าหน้าที่ IT ไม่รู้ว่าจุดไหนมีปัญหาจนกว่าจะมีคนแจ้ง และการแจ้งมักกระจัดกระจายหลายช่องทาง</p></div>
+    </div>
+  </section>
+
+  <section id="simulator">
+    <h2>ลองจำลอง: คนมากขึ้น เน็ตต่อคนช้าลง</h2>
+    <p>เลื่อนเพื่อดูว่า AP หนึ่งตัวที่มีความจุรวมคงที่ แบ่งความเร็วให้แต่ละคนได้เท่าไร</p>
+    <div class="sim">
+      <label for="users">จำนวนผู้ใช้ที่ใช้งานพร้อมกันต่อ AP: <strong id="uVal">20</strong> คน</label>
+      <input type="range" id="users" min="1" max="150" value="20">
+      <div class="readout">
+        <div><b id="perUser">0</b><small>Mbps ต่อคน (โดยประมาณ)</small></div>
+        <div><b id="total">300</b><small>Mbps ความจุรวมที่ใช้ได้จริงของ AP</small></div>
+      </div>
+      <div class="meter" aria-hidden="true"><i id="bar"></i></div>
+      <p class="status" id="status" role="status"></p>
+      <p class="note">ตัวเลขนี้เป็นแบบจำลองอย่างง่ายเพื่อประกอบการอธิบาย: ความจุ AP ประมาณ 300 Mbps และสูญเสียเพิ่มขึ้นเล็กน้อยเมื่อคนมากขึ้น ค่าจริงขึ้นกับอุปกรณ์ มาตรฐาน Wi-Fi และสภาพคลื่น</p>
+    </div>
+  </section>
+
+  <section id="solutions">
+    <h2>แนวทางแก้ไข</h2>
+    <div class="tablewrap">
+    <table>
+      <thead><tr><th>แนวทาง</th><th>แก้ปัญหาอะไร</th></tr></thead>
+      <tbody>
+        <tr><td>เพิ่มจำนวน AP ในพื้นที่หนาแน่น</td><td>กระจายผู้ใช้ให้แต่ละ AP รับคนน้อยลง</td></tr>
+        <tr><td>ใช้คลื่น 5 GHz และ Wi-Fi 6 พร้อม band steering</td><td>ดันอุปกรณ์ออกจาก 2.4 GHz ที่แออัด และรับหลายเครื่องได้ดีขึ้น</td></tr>
+        <tr><td>วางแผนช่องสัญญาณและกำลังส่ง</td><td>ลดการรบกวนระหว่าง AP ที่อยู่ใกล้กัน</td></tr>
+        <tr><td>จำกัดความเร็วต่อผู้ใช้และจัดลำดับความสำคัญ (QoS)</td><td>กันไม่ให้คนใช้หนักคนเดียวกินแบนด์วิดท์ และให้ e-learning มาก่อนสตรีมมิง</td></tr>
+        <tr><td>ขยายอินเทอร์เน็ตขาออกและปรับขนาดกลุ่ม IP</td><td>แก้คอขวดนอก Wi-Fi และกันที่อยู่ IP หมด</td></tr>
+        <tr><td>มีระบบแจ้งปัญหาและแผนที่สถานะเครือข่าย</td><td>รู้จุดที่มีปัญหาเร็วขึ้น และจัดลำดับงานซ่อมได้ตรงจุด</td></tr>
+      </tbody>
+    </table>
+    </div>
+  </section>
+
+  <section id="map">
+    <h2>แผนที่สถานะเครือข่าย <span class="fr">FR-04</span></h2>
+    <p>แสดงสถานะแยกตามอาคารและชั้น คำนวณจากคำร้องที่ยังไม่แก้ไข เมื่อมีคนแจ้งปัญหาหรือ IT อัปเดตสถานะ แผนที่จะเปลี่ยนทันที</p>
+    <div class="legend">
+      <span><i class="dot good"></i>เขียว ปกติ</span>
+      <span><i class="dot warn"></i>เหลือง หนาแน่น (มีคำร้อง 1-2 รายการ)</span>
+      <span><i class="dot bad"></i>แดง มีปัญหา (3 รายการขึ้นไป)</span>
+    </div>
+    <div class="map" id="mapBox"></div>
+    <div class="toolbar">
+      <button type="button" class="btn sm" id="seedBtn">เติมข้อมูลตัวอย่าง</button>
+      <button type="button" class="btn sm" id="clearBtn">ล้างข้อมูลทั้งหมด</button>
+    </div>
+  </section>
+
+  <section id="mine">
+    <h2>คำร้องและการแจ้งเตือนของฉัน <span class="fr">FR-05</span></h2>
+    <div id="mineBox"></div>
+  </section>
+
+  <section id="it">
+    <h2>จัดการคิวงาน (สำหรับเจ้าหน้าที่ IT) <span class="fr">FR-03</span></h2>
+    <div id="itBox"></div>
+  </section>
+
+</main>
+
+<footer>
+  <div class="wrap">Campus Wi-Fi Reporting &amp; Monitoring System · งาน Design and Modeling</div>
+</footer>
+
+<dialog id="loginDlg" aria-labelledby="loginTitle">
+  <div class="dlg">
+    <form id="loginForm" novalidate>
+      <h2 id="loginTitle">เข้าสู่ระบบ <span class="fr">FR-01</span></h2>
+      <p class="sub">เข้าสู่ระบบได้เฉพาะอีเมลมหาวิทยาลัยที่ลงท้ายด้วย @psru.ac.th เท่านั้น ไม่ต้องสมัครสมาชิก ใส่รหัสผ่านอะไรก็ได้ (เวอร์ชันจำลอง)</p>
+      <div class="field"><label for="uid">อีเมลมหาวิทยาลัย</label><input type="email" id="uid" inputmode="email" autocomplete="username" style="width:100%;font:inherit;padding:10px 12px;border:1px solid var(--line);border-radius:8px"></div>
+      <div class="field"><label for="pwd">รหัสผ่าน (ไม่บังคับ ใส่อะไรก็ได้)</label><input type="password" id="pwd" autocomplete="current-password" style="width:100%;font:inherit;padding:10px 12px;border:1px solid var(--line);border-radius:8px"></div>
+      <div class="field"><label for="role">ประเภทบัญชี</label>
+        <select id="role"><option value="student">นักศึกษา</option><option value="staff">บุคลากร</option><option value="it">เจ้าหน้าที่ IT</option></select></div>
+      <p class="err" id="loginErr" role="alert"></p>
+      <div class="actions"><button type="button" class="btn" id="cancelLogin">ยกเลิก</button><button type="submit" class="btn primary">เข้าสู่ระบบ</button></div>
+    </form>
+  </div>
+</dialog>
+
+<dialog id="repairDlg" aria-labelledby="repairTitle">
+  <div class="dlg">
+    <h2 id="repairTitle">สถานะกำลังซ่อม</h2>
+    <p class="sub">จุดที่เจ้าหน้าที่ IT กำลังดำเนินการแก้ไขอยู่ตอนนี้ อัปเดตอัตโนมัติเมื่อสถานะเปลี่ยน</p>
+    <div id="repairBox"></div>
+    <div class="actions" style="margin-top:16px"><button type="button" class="btn primary" id="closeRepair">ปิด</button></div>
+  </div>
+</dialog>
+
+<dialog id="clearDlg" aria-labelledby="clearTitle">
+  <div class="dlg">
+    <h2 id="clearTitle">ล้างข้อมูลทั้งหมด</h2>
+    <p class="sub">คำร้องและการแจ้งเตือนทั้งหมดจะถูกลบและกู้คืนไม่ได้ ต้องการดำเนินการต่อหรือไม่</p>
+    <div class="actions"><button type="button" class="btn" id="cancelClear">ยกเลิก</button><button type="button" class="btn primary" id="confirmClear" style="background:var(--bad);border-color:var(--bad)">ล้างข้อมูล</button></div>
+  </div>
+</dialog>
+
+<div class="toast" id="toast" role="status" hidden></div>
+
+<dialog id="reportDlg" aria-labelledby="dlgTitle">
+  <div class="dlg">
+    <form id="reportForm" novalidate>
+      <h2 id="dlgTitle">แจ้งเน็ตช้า</h2>
+      <p class="sub">เลือกอาคารและชั้นที่พบปัญหา เจ้าหน้าที่ IT จะได้ตรวจสอบตรงจุด</p>
+      <div class="row2">
+        <div class="field">
+          <label for="building">อาคาร</label>
+          <select id="building" required><option value="">เลือกอาคาร</option></select>
+        </div>
+        <div class="field">
+          <label for="floor">ชั้น</label>
+          <select id="floor" required disabled><option value="">เลือกอาคารก่อน</option></select>
+        </div>
+      </div>
+      <div class="field">
+        <label for="issue">ประเภทปัญหา</label>
+        <select id="issue" required>
+          <option value="">เลือกประเภทปัญหา</option>
+          <option>เน็ตช้า</option>
+          <option>หลุดบ่อย</option>
+          <option>เชื่อมต่อไม่ได้</option>
+          <option>ล็อกอินไม่ได้</option>
+          <option>อื่น ๆ</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="detail">รายละเอียดเพิ่มเติม (ไม่บังคับ)</label>
+        <textarea id="detail" placeholder="เช่น ช้าช่วงคาบเรียน หรือห้องที่พบปัญหา"></textarea>
+      </div>
+      <div class="field">
+        <label for="photo">แนบรูปภาพ (ไม่บังคับ)</label>
+        <input type="file" id="photo" accept="image/*">
+      </div>
+      <p class="err" id="formErr" role="alert"></p>
+      <div class="actions">
+        <button type="button" class="btn" id="cancelReport">ยกเลิก</button>
+        <button type="submit" class="btn primary">ส่งแจ้งปัญหา</button>
+      </div>
+    </form>
+    <div class="done" id="doneBox" hidden>
+      <h2>ส่งเรื่องแล้ว</h2>
+      <div class="ticket" id="ticketId"></div>
+      <p id="doneText"></p>
+      <p><span class="pill">สถานะ: Pending</span></p>
+      <div class="actions"><button type="button" class="btn primary" id="closeDone">ปิด</button></div>
+    </div>
+  </div>
+</dialog>
+
+<script>
+  // ================= ข้อมูลและสถานะ =================
+  // แก้รายชื่ออาคารและจำนวนชั้นให้ตรงกับมหาวิทยาลัยของคุณได้ที่นี่
+  const BUILDINGS = {
+    'อาคารเรียนรวม': ['ชั้น 1','ชั้น 2','ชั้น 3','ชั้น 4','ชั้น 5'],
+    'อาคารห้องสมุด': ['ชั้น 1','ชั้น 2','ชั้น 3','ชั้น 4'],
+    'อาคารวิทยาศาสตร์': ['ชั้น 1','ชั้น 2','ชั้น 3','ชั้น 4','ชั้น 5','ชั้น 6'],
+    'โรงอาหารกลาง': ['ชั้น 1','ชั้น 2'],
+    'หอพักนักศึกษา': ['ชั้น 1','ชั้น 2','ชั้น 3','ชั้น 4','ชั้น 5']
+  };
+  const ROLE_TH = { student:'นักศึกษา', staff:'บุคลากร', it:'เจ้าหน้าที่ IT' };
+  const STATUS_TH = { 'Pending':'Pending', 'In Progress':'In Progress', 'Resolved':'Resolved' };
+  const KEY = 'cwrs_v1', SESS = 'cwrs_user';
+  const MAIL_RE = /^[a-z0-9._%+-]+@psru\.ac\.th$/i; // รับเฉพาะโดเมน psru.ac.th (ไม่รวมโดเมนย่อย)
+
+  // TODO: เมื่อมีหลังบ้าน ให้แทน load/save ด้วย fetch('/api/tickets') และ SSO จริง
+  function load() { try { return JSON.parse(localStorage.getItem(KEY)) || { tickets:[], notifs:[], seq:0 }; } catch (e) { return { tickets:[], notifs:[], seq:0 }; } }
+  function save() { try { localStorage.setItem(KEY, JSON.stringify(db)); } catch (e) {} }
+  function loadMe() { try { const u = JSON.parse(sessionStorage.getItem(SESS)); return u && MAIL_RE.test(u.id) ? u : null; } catch (e) { return null; } }
+  function saveMe() { try { me ? sessionStorage.setItem(SESS, JSON.stringify(me)) : sessionStorage.removeItem(SESS); } catch (e) {} }
+  let db = load(), me = loadMe(), pendingReport = false, itFilter = 'all';
+
+  const $ = id => document.getElementById(id);
+  const esc = t => String(t).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  const fmt = iso => new Date(iso).toLocaleString('th-TH', { dateStyle:'short', timeStyle:'short' });
+  const stClass = st => 'st-' + st.replace(' ', '');
+
+  let toastTimer;
+  function toast(msg) {
+    const t = $('toast'); t.textContent = msg; t.hidden = false;
+    clearTimeout(toastTimer); toastTimer = setTimeout(() => t.hidden = true, 3500);
+  }
+
+  // ================= FR-01 เข้าสู่ระบบ =================
+  const loginDlg = $('loginDlg');
+  function openLogin() { $('loginForm').reset(); $('loginErr').textContent = ''; loginDlg.showModal(); }
+  $('cancelLogin').addEventListener('click', () => { pendingReport = false; loginDlg.close(); });
+  $('loginForm').addEventListener('submit', e => {
+    e.preventDefault();
+    const uid = $('uid').value.trim().toLowerCase();
+    if (!uid) { $('loginErr').textContent = 'กรุณากรอกอีเมลมหาวิทยาลัย'; return; }
+    if (!MAIL_RE.test(uid)) { $('loginErr').textContent = 'ใช้ได้เฉพาะอีเมลมหาวิทยาลัย @psru.ac.th เท่านั้น'; return; }
+    me = { id: uid, role: $('role').value };
+    saveMe(); loginDlg.close(); renderAll();
+    const n = db.notifs.filter(x => x.to === me.id && !x.read).length;
+    toast(n ? 'เข้าสู่ระบบแล้ว มีการแจ้งเตือนใหม่ ' + n + ' รายการ' : 'เข้าสู่ระบบแล้ว');
+    if (pendingReport) { pendingReport = false; openReport(); }
+  });
+  function logout() { me = null; saveMe(); renderAll(); toast('ออกจากระบบแล้ว'); }
+
+  function renderAuth() {
+    const box = $('authBox');
+    if (!me) { box.innerHTML = '<button type="button" class="btn sm primary" id="loginBtn">เข้าสู่ระบบ (SSO)</button>'; $('loginBtn').onclick = openLogin; return; }
+    const n = db.notifs.filter(x => x.to === me.id && !x.read).length;
+    box.innerHTML = '<span class="chip">' + esc(me.id) + ' · ' + ROLE_TH[me.role] + '</span>' +
+      (n ? '<span class="chip"><a href="#mine">แจ้งเตือน ' + n + '</a></span>' : '') +
+      '<button type="button" class="btn sm" id="logoutBtn">ออกจากระบบ</button>';
+    $('logoutBtn').onclick = logout;
+  }
+
+  // ================= FR-02 แจ้งปัญหา =================
+  const dlg = $('reportDlg'), form = $('reportForm');
+  const bSel = $('building'), fSel = $('floor'), iSel = $('issue'), formErr = $('formErr'), doneBox = $('doneBox');
+  Object.keys(BUILDINGS).forEach(b => bSel.add(new Option(b, b)));
+  bSel.addEventListener('change', () => {
+    fSel.length = 0;
+    if (!bSel.value) { fSel.add(new Option('เลือกอาคารก่อน', '')); fSel.disabled = true; return; }
+    fSel.add(new Option('เลือกชั้น', ''));
+    BUILDINGS[bSel.value].forEach(f => fSel.add(new Option(f, f)));
+    fSel.disabled = false;
+  });
+  function openReport() {
+    if (!me) { pendingReport = true; openLogin(); return; }
+    form.reset(); fSel.length = 0; fSel.add(new Option('เลือกอาคารก่อน', '')); fSel.disabled = true;
+    formErr.textContent = ''; form.hidden = false; doneBox.hidden = true; dlg.showModal();
+  }
+  $('openReport').addEventListener('click', openReport);
+  $('cancelReport').addEventListener('click', () => dlg.close());
+  $('closeDone').addEventListener('click', () => dlg.close());
+  form.addEventListener('submit', e => {
+    e.preventDefault();
+    if (!bSel.value || !fSel.value || !iSel.value) { formErr.textContent = 'กรุณาเลือกอาคาร ชั้น และประเภทปัญหาให้ครบ'; return; }
+    db = load(); db.seq = (db.seq || 0) + 1;
+    const t = {
+      id: 'TK-' + String(db.seq).padStart(4, '0'), building: bSel.value, floor: fSel.value, issue: iSel.value,
+      detail: $('detail').value.trim(), hasPhoto: $('photo').files.length > 0,
+      reporter: me.id, status: 'Pending', createdAt: new Date().toISOString(), updatedAt: new Date().toISOString()
+    };
+    db.tickets.unshift(t); save();
+    $('ticketId').textContent = t.id;
+    $('doneText').textContent = 'แจ้งปัญหา "' + t.issue + '" ที่ ' + t.building + ' ' + t.floor + ' เรียบร้อย';
+    form.hidden = true; doneBox.hidden = false; renderAll();
+  });
+
+  // ================= FR-04 แผนที่สถานะ =================
+  const openCount = (b, f) => db.tickets.filter(t => t.building === b && t.floor === f && t.status !== 'Resolved').length;
+  const level = n => n >= 3 ? 'bad' : n >= 1 ? 'warn' : 'good';
+  const LV_TH = { good:'ปกติ', warn:'หนาแน่น', bad:'มีปัญหา' };
+  function renderMap() {
+    $('mapBox').innerHTML = Object.entries(BUILDINGS).map(([b, floors]) => {
+      const counts = floors.map(f => openCount(b, f));
+      const worst = level(Math.max(...counts)), total = counts.reduce((a, c) => a + c, 0);
+      return '<div class="bldg"><h3>' + esc(b) + '<span class="st lv-' + worst + ' fl">' + LV_TH[worst] + (total ? ' · ' + total : '') + '</span></h3>' +
+        '<div class="floors">' + floors.map((f, i) => '<span class="fl lv-' + level(counts[i]) + '" title="' + counts[i] + ' คำร้องที่ยังไม่แก้ไข">' + esc(f) + '</span>').join('') + '</div></div>';
+    }).join('');
+  }
+  $('seedBtn').onclick = () => {
+    db = load();
+    const mk = (b, f, issue, st) => { db.seq++; return { id:'TK-' + String(db.seq).padStart(4,'0'), building:b, floor:f, issue, detail:'', hasPhoto:false, reporter:'demo', status:st, createdAt:new Date().toISOString(), updatedAt:new Date().toISOString() }; };
+    [['อาคารเรียนรวม','ชั้น 3','เน็ตช้า','Pending'],['อาคารเรียนรวม','ชั้น 3','หลุดบ่อย','Pending'],['อาคารเรียนรวม','ชั้น 3','เน็ตช้า','In Progress'],
+     ['โรงอาหารกลาง','ชั้น 1','เน็ตช้า','Pending'],['อาคารห้องสมุด','ชั้น 2','เชื่อมต่อไม่ได้','Resolved']]
+      .forEach(r => db.tickets.unshift(mk(...r)));
+    save(); renderAll(); toast('เติมข้อมูลตัวอย่างแล้ว');
+  };
+  // ใช้หน้าต่างยืนยันของเราเอง เพราะ confirm() ของเบราว์เซอร์อาจถูกบล็อกในบางสภาพแวดล้อม (เช่น iframe/พรีวิว)
+  $('clearBtn').onclick = () => $('clearDlg').showModal();
+  $('cancelClear').onclick = () => $('clearDlg').close();
+  $('confirmClear').onclick = () => {
+    db = { tickets:[], notifs:[], seq:0 };
+    try { localStorage.removeItem(KEY); } catch (e) {}
+    save(); $('clearDlg').close(); renderAll(); toast('ล้างข้อมูลทั้งหมดแล้ว');
+  };
+
+  // ================= FR-05 คำร้องของฉัน + แจ้งเตือน =================
+  function renderMine() {
+    const box = $('mineBox');
+    if (!me) { box.innerHTML = '<div class="empty">เข้าสู่ระบบเพื่อดูคำร้องและการแจ้งเตือนของคุณ</div>'; return; }
+    const mine = db.tickets.filter(t => t.reporter === me.id);
+    const notifs = db.notifs.filter(n => n.to === me.id);
+    let h = '<h3 style="margin-top:8px">การแจ้งเตือน</h3>';
+    h += notifs.length ? '<div class="list">' + notifs.map(n => '<div class="item ' + (n.read ? '' : 'unread') + '"><div>' + esc(n.text) + '<small>' + fmt(n.time) + '</small></div></div>').join('') + '</div>' +
+      (notifs.some(n => !n.read) ? '<div class="toolbar"><button type="button" class="btn sm" id="readAll">ทำเครื่องหมายว่าอ่านแล้ว</button></div>' : '')
+      : '<div class="empty">ยังไม่มีการแจ้งเตือน ระบบจะแจ้งเมื่อ IT อัปเดตสถานะคำร้องของคุณ</div>';
+    h += '<h3 style="margin-top:22px">คำร้องที่ฉันแจ้ง</h3>';
+    h += mine.length ? '<div class="list">' + mine.map(t => '<div class="item"><div><b>' + t.id + '</b> ' + esc(t.issue) + '<small>' + esc(t.building) + ' ' + esc(t.floor) + ' · ' + fmt(t.createdAt) + '</small></div><span class="pill ' + stClass(t.status) + '">' + STATUS_TH[t.status] + '</span></div>').join('') + '</div>'
+      : '<div class="empty">ยังไม่มีคำร้อง กดปุ่ม "แจ้งเน็ตช้า" ด้านบนเพื่อแจ้งปัญหา</div>';
+    box.innerHTML = h;
+    const r = $('readAll');
+    if (r) r.onclick = () => { db = load(); db.notifs.forEach(n => { if (n.to === me.id) n.read = true; }); save(); renderAll(); };
+  }
+
+  // ================= FR-03 จัดการคิวงาน (IT) =================
+  const NEXT = { 'Pending':['In Progress','รับเรื่อง'], 'In Progress':['Resolved','แก้ไขเสร็จ'] };
+  function advance(id) {
+    db = load();
+    const t = db.tickets.find(x => x.id === id); if (!t || !NEXT[t.status]) return;
+    t.status = NEXT[t.status][0]; t.updatedAt = new Date().toISOString();
+    db.notifs.unshift({ id:'N' + Date.now(), to:t.reporter, ticketId:t.id, read:false, time:t.updatedAt,
+      text:'คำร้อง ' + t.id + ' (' + t.building + ' ' + t.floor + ') เปลี่ยนสถานะเป็น ' + t.status });
+    save(); renderAll(); toast(t.id + ' → ' + t.status + ' (ส่งแจ้งเตือนถึงผู้แจ้งแล้ว)');
+  }
+  function renderIT() {
+    const box = $('itBox');
+    if (!me || me.role !== 'it') { box.innerHTML = '<div class="empty">ส่วนนี้สำหรับเจ้าหน้าที่ IT เข้าสู่ระบบโดยเลือกประเภทบัญชี "เจ้าหน้าที่ IT" เพื่อจัดการคิวงาน</div>'; return; }
+    const rows = db.tickets.filter(t => itFilter === 'all' || t.status === itFilter);
+    const opts = ['all','Pending','In Progress','Resolved'].map(v => '<option value="' + v + '"' + (v === itFilter ? ' selected' : '') + '>' + (v === 'all' ? 'ทุกสถานะ' : v) + '</option>').join('');
+    let h = '<div class="toolbar"><label for="itF">กรองสถานะ</label><select id="itF">' + opts + '</select><span class="chip">ค้างอยู่ ' + db.tickets.filter(t => t.status !== 'Resolved').length + ' รายการ</span></div>';
+    h += rows.length ? '<div class="tablewrap"><table><thead><tr><th>Ticket</th><th>สถานที่</th><th>ปัญหา</th><th>ผู้แจ้ง</th><th>สถานะ</th><th></th></tr></thead><tbody>' +
+      rows.map(t => '<tr><td>' + t.id + '<br><small>' + fmt(t.createdAt) + '</small></td><td>' + esc(t.building) + '<br>' + esc(t.floor) + '</td><td>' + esc(t.issue) + (t.detail ? '<br><small>' + esc(t.detail) + '</small>' : '') + '</td><td>' + esc(t.reporter) + '</td><td><span class="pill ' + stClass(t.status) + '">' + t.status + '</span></td><td>' +
+        (NEXT[t.status] ? '<button type="button" class="btn sm primary" data-adv="' + t.id + '">' + NEXT[t.status][1] + '</button>' : '') + '</td></tr>').join('') + '</tbody></table></div>'
+      : '<div class="empty" style="margin-top:12px">ไม่มีคำร้องในสถานะนี้</div>';
+    box.innerHTML = h;
+    $('itF').onchange = e => { itFilter = e.target.value; renderIT(); };
+    box.querySelectorAll('[data-adv]').forEach(b => b.onclick = () => advance(b.dataset.adv));
+  }
+
+  // ================= หน้าต่างสถานะกำลังซ่อม =================
+  const inProg = () => db.tickets.filter(t => t.status === 'In Progress');
+  function renderRepair() {
+    const list = inProg(), n = list.length;
+    $('repairBanner').hidden = !n;
+    $('repairBadge').hidden = !n; $('repairBadge').textContent = n;
+    if (n) {
+      const places = [...new Set(list.map(t => t.building + ' ' + t.floor))];
+      $('repairText').textContent = 'กำลังซ่อม ' + n + ' รายการ: ' + places.slice(0, 3).join(', ') + (places.length > 3 ? ' และอีก ' + (places.length - 3) + ' จุด' : '');
+    }
+    const done = db.tickets.filter(t => t.status === 'Resolved').sort((a, b) => b.updatedAt.localeCompare(a.updatedAt)).slice(0, 3);
+    let h = n ? '<div class="list">' + list.map(t => '<div class="item"><div><b>' + t.id + '</b> ' + esc(t.issue) + '<small>' + esc(t.building) + ' ' + esc(t.floor) + ' · เริ่มดำเนินการ ' + fmt(t.updatedAt) + '</small></div><span class="pill st-InProgress"><i class="pulse"></i>กำลังซ่อม</span></div>').join('') + '</div>'
+      : '<div class="empty">ขณะนี้ไม่มีจุดที่กำลังซ่อม</div>';
+    if (done.length) h += '<h3 style="margin-top:18px">แก้ไขเสร็จล่าสุด</h3><div class="list">' + done.map(t => '<div class="item"><div><b>' + t.id + '</b> ' + esc(t.issue) + '<small>' + esc(t.building) + ' ' + esc(t.floor) + ' · ' + fmt(t.updatedAt) + '</small></div><span class="pill st-Resolved">เสร็จแล้ว</span></div>').join('') + '</div>';
+    $('repairBox').innerHTML = h;
+  }
+  const repairDlg = $('repairDlg');
+  function openRepair() { renderRepair(); if (!repairDlg.open) repairDlg.showModal(); }
+  $('repairLink').addEventListener('click', e => { e.preventDefault(); openRepair(); });
+  $('repairOpen').addEventListener('click', openRepair);
+  $('closeRepair').addEventListener('click', () => repairDlg.close());
+
+  function renderAll() { renderAuth(); renderMap(); renderMine(); renderIT(); renderRepair(); }
+  // อัปเดตทันทีเมื่ออีกแท็บ (เช่น IT) แก้ข้อมูล
+  window.addEventListener('storage', e => { if (e.key === KEY) {
+    const before = new Set(inProg().map(t => t.id));
+    db = load(); renderAll();
+    const added = inProg().filter(t => !before.has(t.id));
+    if (added.length) toast('เริ่มซ่อม ' + added[0].building + ' ' + added[0].floor);
+  } });
+  renderAll();
+
+  // ---------- ตัวจำลอง ----------
+  const users = document.getElementById('users');
+  const uVal = document.getElementById('uVal');
+  const perUser = document.getElementById('perUser');
+  const total = document.getElementById('total');
+  const bar = document.getElementById('bar');
+  const status = document.getElementById('status');
+
+  function update() {
+    const n = Number(users.value);
+    const base = 300;
+    // ความจุรวมลดลงเล็กน้อยเมื่อคนมากขึ้น (overhead จากการแย่งช่องสัญญาณ)
+    const usable = base * Math.max(0.45, 1 - n * 0.004);
+    const per = usable / n;
+    uVal.textContent = n;
+    total.textContent = Math.round(usable);
+    perUser.textContent = per >= 10 ? Math.round(per) : per.toFixed(1);
+    const pct = Math.min(100, (per / 25) * 100);
+    bar.style.width = Math.max(4, pct) + '%';
+    let color, msg;
+    if (per >= 10)      { color = 'var(--good)'; msg = 'ใช้งานลื่น ดูวิดีโอและประชุมออนไลน์ได้'; }
+    else if (per >= 3)  { color = 'var(--warn)'; msg = 'เริ่มช้า เปิดเว็บได้ แต่วิดีโออาจกระตุก'; }
+    else                { color = 'var(--bad)';  msg = 'ช้ามาก ส่งงานหรือสอบออนไลน์เสี่ยงหลุด'; }
+    bar.style.background = color;
+    status.textContent = msg;
+  }
+  users.addEventListener('input', update);
+  update();
+</script>
+</body>
+</html>
